@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goodman Computer - Invoice Generator</title>
+  <!-- Tailwind CSS for Professional Styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2pdf.js for high-quality PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              light: '#138d56',
+              DEFAULT: '#0A5C36', // Deep Green
+              dark: '#05331e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+      background-color: #f3f4f6;
+    }
+
+    /* Clean inputs for print */
+    input,
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      outline: none;
+      resize: none;
+      transition: border 0.2s;
+    }
+
+    input:hover,
+    textarea:hover,
+    input:focus,
+    textarea:focus {
+      border-bottom: 1px dashed #0A5C36;
+    }
+
+    /* Specific numeric inputs alignment */
+    .num-input {
+      text-align: right;
+    }
+  </style>
+</head>
+
+<body class="py-8 px-4 text-gray-800">
+
+  <!-- Top Controls (Not included in PDF) -->
+  <div
+    class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm"
+    data-html2pdf-ignore="true">
+    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+      <label class="font-semibold text-gray-600">Language:</label>
+      <select id="langSwitch" onchange="changeLanguage()"
+        class="border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:border-brand">
+        <option value="en">English</option>
+        <option value="bn">বাংলা (Bengali)</option>
+      </select>
+    </div>
+    <button onclick="exportPDF()"
+      class="bg-brand hover:bg-brand-dark text-white font-semibold py-2 px-6 rounded shadow-md transition duration-300 flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+        </path>
+      </svg>
+      <span data-i18n="exportBtn">Export PDF</span>
+    </button>
+  </div>
+
+  <!-- INVOICE CANVAS (This whole div gets exported) -->
+  <div id="invoice-canvas" class="max-w-4xl mx-auto bg-white p-10 sm:p-16 shadow-xl rounded-sm">
+
+    <!-- Header: Logo and Invoice Info -->
+    <div class="flex justify-between items-start border-b-2 border-brand pb-8 mb-8">
+      <!-- Brand Info & Logo -->
+      <div class="flex items-center space-x-4">
+        <img src="goodman_logo.png" alt="Goodman Logo" width="300" height="300" class="object-contain" />
+      </div>
+
+      <!-- Invoice Meta data -->
+      <div class="text-right">
+        <h2 class="text-4xl font-bold text-gray-200 uppercase tracking-wider mb-2" data-i18n="title">INVOICE</h2>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div class="font-semibold text-gray-600" data-i18n="invoiceNo">Invoice No:</div>
+          <div><input type="text" class="num-input font-bold" value="#GC-2026-001"></div>
+
+          <div class="font-semibold text-gray-600" data-i18n="date">Date:</div>
+          <div><input type="date" class="num-input text-gray-800" value="2026-06-07"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Addresses -->
+    <div class="flex justify-between mb-10">
+      <div class="w-1/2 pr-4">
+        <h3 class="font-bold text-brand mb-2 border-b border-gray-200 inline-block pb-1" data-i18n="from">From</h3>
+        <p class="font-bold text-gray-800">Goodman Computer</p>
+        <textarea class="text-sm text-gray-600 mt-1 h-20"
+          placeholder="Your Address">BCS Computer City&#10;IDB Bhaban, Agargaon&#10;Dhaka, Bangladesh&#10;Phone: +880 1XXX-XXXXXX</textarea>
+      </div>
+      <div class="w-1/2 pl-4 border-l border-gray-200 text-right">
+        <h3 class="font-bold text-brand mb-2 border-b border-gray-200 inline-block pb-1" data-i18n="billTo">Bill To</h3>
+        <input type="text" class="font-bold text-gray-800 text-right w-full block mb-1"
+          placeholder="Client/Company Name" value="Tech Solutions Ltd.">
+        <textarea class="text-sm text-gray-600 h-20 text-right"
+          placeholder="Client Address">123 Business Avenue&#10;Block C, Banani&#10;Dhaka, Bangladesh</textarea>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="mb-8 overflow-hidden rounded-lg border border-gray-200">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-brand text-white text-sm uppercase tracking-wider">
+            <th class="py-3 px-4 w-1/2" data-i18n="description">Item Description</th>
+            <th class="py-3 px-4 text-center" data-i18n="qty">Qty</th>
+            <th class="py-3 px-4 text-right" data-i18n="price">Price</th>
+            <th class="py-3 px-4 text-right" data-i18n="amount">Amount</th>
+            <th class="py-3 px-2 w-10 text-center" data-html2pdf-ignore="true"></th>
+          </tr>
+        </thead>
+        <tbody id="invoice-items" class="text-sm divide-y divide-gray-200">
+          <!-- Default Row 1 -->
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model"
+                value="Desktop PC Core i5 12th Gen"></td>
+            <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="1" oninput="calculate()"></td>
+            <td class="py-2 px-4"><input type="number" class="num-input price-input" value="45000"
+                oninput="calculate()"></td>
+            <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">45000</td>
+            <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
+              <button onclick="removeRow(this)"
+                class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
+            </td>
+          </tr>
+          <!-- Default Row 2 -->
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model" value="Logitech Wireless Mouse">
+            </td>
+            <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="2" oninput="calculate()"></td>
+            <td class="py-2 px-4"><input type="number" class="num-input price-input" value="1200" oninput="calculate()">
+            </td>
+            <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">2400</td>
+            <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
+              <button onclick="removeRow(this)"
+                class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="p-3 bg-gray-50 border-t border-gray-200 text-center" data-html2pdf-ignore="true">
+        <button onclick="addRow()" class="text-sm font-semibold text-brand hover:text-brand-dark">+ <span
+            data-i18n="addRow">Add New Item</span></button>
+      </div>
+    </div>
+
+    <!-- Totals & Notes -->
+    <div class="flex flex-col sm:flex-row justify-between mt-8">
+      <!-- Notes -->
+      <div class="w-full sm:w-1/2 pr-4 mb-6 sm:mb-0">
+        <div class="mb-4">
+          <h4 class="font-bold text-gray-700 text-sm mb-1 uppercase" data-i18n="paymentMethods">Payment Methods</h4>
+          <textarea class="text-sm text-gray-600 h-16"
+            placeholder="Bank details or bKash...">Bank Transfer: Brac Bank&#10;A/C: 123456789012&#10;bKash: +880 1XXX-XXXXXX</textarea>
+        </div>
+        <div>
+          <h4 class="font-bold text-gray-700 text-sm mb-1 uppercase" data-i18n="terms">Terms & Conditions</h4>
+          <textarea class="text-sm text-gray-600 h-16"
+            placeholder="Warranty details...">Products carry brand warranty as per manufacturer policy. Goods once sold cannot be returned.</textarea>
+        </div>
+      </div>
+
+      <!-- Calculations -->
+      <div class="w-full sm:w-5/12">
+        <div class="bg-gray-50 rounded-lg p-5 border border-gray-100">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-gray-600 font-medium" data-i18n="subtotal">Subtotal</span>
+            <span class="font-semibold text-gray-800" id="subtotal">47400</span>
+          </div>
+          <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
+            <span class="text-gray-600 font-medium" data-i18n="discount">Discount (-)</span>
+            <input type="number" id="discount"
+              class="num-input w-24 border-b border-gray-300 focus:border-brand bg-white px-1" value="400"
+              oninput="calculate()">
+          </div>
+          <div class="flex justify-between items-center mt-3">
+            <span class="text-lg font-bold text-brand uppercase" data-i18n="grandTotal">Grand Total</span>
+            <span class="text-xl font-bold text-brand"><span id="currency">৳</span> <span
+                id="grandTotal">47000</span></span>
+          </div>
+        </div>
+
+        <!-- Signature Area -->
+        <div class="mt-16 text-center">
+          <div class="w-48 mx-auto border-t-2 border-gray-400 pt-2">
+            <span class="font-medium text-gray-600 text-sm" data-i18n="signature">Authorized Signature</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Dictionary for Bilingual Support
+    const dict = {
+      en: {
+        exportBtn: "Export PDF", title: "INVOICE", invoiceNo: "Invoice No:", date: "Date:",
+        from: "From", billTo: "Bill To", description: "Item Description", qty: "Qty",
+        price: "Price", amount: "Amount", addRow: "Add New Item", paymentMethods: "Payment Methods",
+        terms: "Terms & Conditions", subtotal: "Subtotal", discount: "Discount (-)",
+        grandTotal: "Grand Total", signature: "Authorized Signature", currencySymbol: "৳"
+      },
+      bn: {
+        exportBtn: "পিডিএফ ডাউনলোড", title: "চালান", invoiceNo: "চালান নম্বর:", date: "তারিখ:",
+        from: "প্রেরক", billTo: "প্রাপক", description: "পণ্যের বিবরণ", qty: "পরিমাণ",
+        price: "মূল্য", amount: "মোট মূল্য", addRow: "নতুন পণ্য যোগ করুন", paymentMethods: "পেমেন্ট মাধ্যম",
+        terms: "শর্তাবলী", subtotal: "উপমোট", discount: "ছাড় (-)",
+        grandTotal: "সর্বমোট", signature: "অনুমোদিত স্বাক্ষর", currencySymbol: "৳"
+      }
+    };
+
+    // Initialize calculations on load
+    window.onload = function () {
+      calculate();
+    };
+
+    // Language Switcher Function
+    function changeLanguage() {
+      const lang = document.getElementById('langSwitch').value;
+      const elements = document.querySelectorAll('[data-i18n]');
+
+      elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[lang][key]) {
+          el.innerText = dict[lang][key];
+        }
+      });
+      document.getElementById('currency').innerText = dict[lang].currencySymbol;
+    }
+
+    // Calculation Function
+    function calculate() {
+      const rows = document.querySelectorAll('#invoice-items tr');
+      let subtotal = 0;
+
+      rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        const amount = qty * price;
+
+        row.querySelector('.amount-display').innerText = amount.toLocaleString('en-IN');
+        subtotal += amount;
+      });
+
+      document.getElementById('subtotal').innerText = subtotal.toLocaleString('en-IN');
+
+      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      const grandTotal = subtotal - discount;
+
+      document.getElementById('grandTotal').innerText = grandTotal.toLocaleString('en-IN');
+    }
+
+    // Add Row Function
+    function addRow() {
+      const tbody = document.getElementById('invoice-items');
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-gray-50";
+      tr.innerHTML = `
+                <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model"></td>
+                <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="1" oninput="calculate()"></td>
+                <td class="py-2 px-4"><input type="number" class="num-input price-input" value="0" oninput="calculate()"></td>
+                <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">0</td>
+                <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
+                    <button onclick="removeRow(this)" class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
+                </td>
+            `;
+      tbody.appendChild(tr);
+      calculate();
+    }
+
+    // Remove Row Function
+    function removeRow(btn) {
+      const row = btn.closest('tr');
+      row.remove();
+      calculate();
+    }
+
+    // PDF Export Function using html2pdf
+    function exportPDF() {
+      const element = document.getElementById('invoice-canvas');
+      const invoiceNo = document.querySelector('input[value^="#GC"]').value || 'invoice';
+
+      const opt = {
+        margin: [10, 0, 10, 0], // Top, Left, Bottom, Right
+        filename: `Goodman_Computer_${invoiceNo}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { scale: 3, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      // Disable pointer events on inputs momentarily to remove any focus rings
+      element.style.pointerEvents = 'none';
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Restore pointer events
+        element.style.pointerEvents = 'auto';
+      });
+    }
+  </script>
+</body>
+
+</html>
