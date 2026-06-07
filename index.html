@@ -55,16 +55,23 @@
     .num-input {
       text-align: right;
     }
+
+    /* Ensure the mobile view doesn't force right-alignment on inputs */
+    @media (max-width: 768px) {
+      .num-input.mobile-left {
+        text-align: left;
+      }
+    }
   </style>
 </head>
 
-<body class="py-8 px-4 text-gray-800">
+<body class="py-4 md:py-8 px-2 md:px-4 text-gray-800">
 
   <!-- Top Controls (Not included in PDF) -->
   <div
-    class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm"
+    class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm gap-4 sm:gap-0"
     data-html2pdf-ignore="true">
-    <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+    <div class="flex items-center space-x-4">
       <label class="font-semibold text-gray-600">Language:</label>
       <select id="langSwitch" onchange="changeLanguage()"
         class="border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:border-brand">
@@ -73,7 +80,7 @@
       </select>
     </div>
     <button onclick="exportPDF()"
-      class="bg-brand hover:bg-brand-dark text-white font-semibold py-2 px-6 rounded shadow-md transition duration-300 flex items-center">
+      class="w-full sm:w-auto justify-center bg-brand hover:bg-brand-dark text-white font-semibold py-2 px-6 rounded shadow-md transition duration-300 flex items-center">
       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
@@ -84,86 +91,94 @@
   </div>
 
   <!-- INVOICE CANVAS (This whole div gets exported) -->
-  <div id="invoice-canvas" class="max-w-4xl mx-auto bg-white p-10 sm:p-16 shadow-xl rounded-sm">
+  <div id="invoice-canvas" class="max-w-4xl mx-auto bg-white p-6 sm:p-10 md:p-16 shadow-xl rounded-sm">
 
     <!-- Header: Logo and Invoice Info -->
-    <div class="flex justify-between items-start border-b-2 border-brand pb-8 mb-8">
+    <div
+      class="flex flex-col md:flex-row justify-between items-start border-b-2 border-brand pb-6 md:pb-8 mb-6 md:mb-8 gap-6 md:gap-0">
       <!-- Brand Info & Logo -->
-      <div class="flex items-center space-x-4">
-        <img src="goodman_logo.png" alt="Goodman Logo" width="300" height="300" class="object-contain" />
+      <div class="flex items-center space-x-4 w-full md:w-auto justify-center md:justify-start">
+        <img src="goodman_logo.png" alt="Goodman Logo" class="object-contain max-w-[200px] md:max-w-[300px] h-auto" />
       </div>
 
       <!-- Invoice Meta data -->
-      <div class="text-right">
-        <h2 class="text-4xl font-bold text-gray-200 uppercase tracking-wider mb-2" data-i18n="title">INVOICE</h2>
-        <div class="grid grid-cols-2 gap-2 text-sm">
+      <div
+        class="text-left md:text-right w-full md:w-auto bg-gray-50 md:bg-transparent p-4 md:p-0 rounded-lg md:rounded-none">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-300 md:text-gray-200 uppercase tracking-wider mb-2 md:mb-4"
+          data-i18n="title">INVOICE</h2>
+        <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-sm items-center">
           <div class="font-semibold text-gray-600" data-i18n="invoiceNo">Invoice No:</div>
-          <div><input type="text" class="num-input font-bold" value="#GC-2026-001"></div>
+          <div><input type="text" id="auto-invoice-no" class="num-input mobile-left font-bold w-full" value=""></div>
 
           <div class="font-semibold text-gray-600" data-i18n="date">Date:</div>
-          <div><input type="date" class="num-input text-gray-800" value="2026-06-07"></div>
+          <div><input type="date" id="auto-date" class="num-input mobile-left text-gray-800 w-full" value=""></div>
         </div>
       </div>
     </div>
 
     <!-- Addresses -->
-    <div class="flex justify-between mb-10">
-      <div class="w-1/2 pr-4">
+    <div class="flex flex-col md:flex-row justify-between mb-8 md:mb-10 gap-8 md:gap-0">
+      <div class="w-full md:w-1/2 md:pr-4">
         <h3 class="font-bold text-brand mb-2 border-b border-gray-200 inline-block pb-1" data-i18n="from">From</h3>
         <p class="font-bold text-gray-800">Goodman Computer</p>
-        <textarea class="text-sm text-gray-600 mt-1 h-20"
+        <textarea class="text-sm text-gray-600 mt-1 h-20 w-full"
           placeholder="Your Address">BCS Computer City&#10;IDB Bhaban, Agargaon&#10;Dhaka, Bangladesh&#10;Phone: +880 1XXX-XXXXXX</textarea>
       </div>
-      <div class="w-1/2 pl-4 border-l border-gray-200 text-right">
+      <div class="w-full md:w-1/2 md:pl-4 md:border-l border-gray-200 text-left md:text-right">
         <h3 class="font-bold text-brand mb-2 border-b border-gray-200 inline-block pb-1" data-i18n="billTo">Bill To</h3>
-        <input type="text" class="font-bold text-gray-800 text-right w-full block mb-1"
+        <input type="text" class="font-bold text-gray-800 text-left md:text-right w-full block mb-1"
           placeholder="Client/Company Name" value="Tech Solutions Ltd.">
-        <textarea class="text-sm text-gray-600 h-20 text-right"
+        <textarea class="text-sm text-gray-600 h-20 text-left md:text-right w-full"
           placeholder="Client Address">123 Business Avenue&#10;Block C, Banani&#10;Dhaka, Bangladesh</textarea>
       </div>
     </div>
 
-    <!-- Items Table -->
+    <!-- Items Table (Responsive Wrapper Added) -->
     <div class="mb-8 overflow-hidden rounded-lg border border-gray-200">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-brand text-white text-sm uppercase tracking-wider">
-            <th class="py-3 px-4 w-1/2" data-i18n="description">Item Description</th>
-            <th class="py-3 px-4 text-center" data-i18n="qty">Qty</th>
-            <th class="py-3 px-4 text-right" data-i18n="price">Price</th>
-            <th class="py-3 px-4 text-right" data-i18n="amount">Amount</th>
-            <th class="py-3 px-2 w-10 text-center" data-html2pdf-ignore="true"></th>
-          </tr>
-        </thead>
-        <tbody id="invoice-items" class="text-sm divide-y divide-gray-200">
-          <!-- Default Row 1 -->
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model"
-                value="Desktop PC Core i5 12th Gen"></td>
-            <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="1" oninput="calculate()"></td>
-            <td class="py-2 px-4"><input type="number" class="num-input price-input" value="45000"
-                oninput="calculate()"></td>
-            <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">45000</td>
-            <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
-              <button onclick="removeRow(this)"
-                class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
-            </td>
-          </tr>
-          <!-- Default Row 2 -->
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model" value="Logitech Wireless Mouse">
-            </td>
-            <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="2" oninput="calculate()"></td>
-            <td class="py-2 px-4"><input type="number" class="num-input price-input" value="1200" oninput="calculate()">
-            </td>
-            <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">2400</td>
-            <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
-              <button onclick="removeRow(this)"
-                class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[600px]">
+          <thead>
+            <tr class="bg-brand text-white text-sm uppercase tracking-wider">
+              <th class="py-3 px-4 w-1/2" data-i18n="description">Item Description</th>
+              <th class="py-3 px-4 text-center" data-i18n="qty">Qty</th>
+              <th class="py-3 px-4 text-right" data-i18n="price">Price</th>
+              <th class="py-3 px-4 text-right" data-i18n="amount">Amount</th>
+              <th class="py-3 px-2 w-10 text-center" data-html2pdf-ignore="true"></th>
+            </tr>
+          </thead>
+          <tbody id="invoice-items" class="text-sm divide-y divide-gray-200">
+            <!-- Default Row 1 -->
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model"
+                  value="Desktop PC Core i5 12th Gen"></td>
+              <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="1" oninput="calculate()">
+              </td>
+              <td class="py-2 px-4"><input type="number" class="num-input price-input" value="45000"
+                  oninput="calculate()"></td>
+              <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">45000</td>
+              <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
+                <button onclick="removeRow(this)"
+                  class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
+              </td>
+            </tr>
+            <!-- Default Row 2 -->
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 px-4"><input type="text" placeholder="Product Name/Model" value="Logitech Wireless Mouse">
+              </td>
+              <td class="py-2 px-4"><input type="number" class="num-input qty-input" value="2" oninput="calculate()">
+              </td>
+              <td class="py-2 px-4"><input type="number" class="num-input price-input" value="1200"
+                  oninput="calculate()">
+              </td>
+              <td class="py-2 px-4 text-right font-semibold text-gray-700 amount-display">2400</td>
+              <td class="py-2 px-2 text-center" data-html2pdf-ignore="true">
+                <button onclick="removeRow(this)"
+                  class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <div class="p-3 bg-gray-50 border-t border-gray-200 text-center" data-html2pdf-ignore="true">
         <button onclick="addRow()" class="text-sm font-semibold text-brand hover:text-brand-dark">+ <span
@@ -172,35 +187,35 @@
     </div>
 
     <!-- Totals & Notes -->
-    <div class="flex flex-col sm:flex-row justify-between mt-8">
+    <div class="flex flex-col md:flex-row justify-between mt-8 gap-8 md:gap-4">
       <!-- Notes -->
-      <div class="w-full sm:w-1/2 pr-4 mb-6 sm:mb-0">
-        <div class="mb-4">
+      <div class="w-full md:w-1/2 md:pr-4 order-2 md:order-1">
+        <div class="mb-6">
           <h4 class="font-bold text-gray-700 text-sm mb-1 uppercase" data-i18n="paymentMethods">Payment Methods</h4>
-          <textarea class="text-sm text-gray-600 h-16"
+          <textarea class="text-sm text-gray-600 h-16 w-full"
             placeholder="Bank details or bKash...">Bank Transfer: Brac Bank&#10;A/C: 123456789012&#10;bKash: +880 1XXX-XXXXXX</textarea>
         </div>
         <div>
           <h4 class="font-bold text-gray-700 text-sm mb-1 uppercase" data-i18n="terms">Terms & Conditions</h4>
-          <textarea class="text-sm text-gray-600 h-16"
+          <textarea class="text-sm text-gray-600 h-16 w-full"
             placeholder="Warranty details...">Products carry brand warranty as per manufacturer policy. Goods once sold cannot be returned.</textarea>
         </div>
       </div>
 
       <!-- Calculations -->
-      <div class="w-full sm:w-5/12">
-        <div class="bg-gray-50 rounded-lg p-5 border border-gray-100">
+      <div class="w-full md:w-5/12 order-1 md:order-2">
+        <div class="bg-gray-50 rounded-lg p-5 border border-gray-100 shadow-sm">
           <div class="flex justify-between items-center mb-2">
             <span class="text-gray-600 font-medium" data-i18n="subtotal">Subtotal</span>
             <span class="font-semibold text-gray-800" id="subtotal">47400</span>
           </div>
-          <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
+          <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-3 mt-3">
             <span class="text-gray-600 font-medium" data-i18n="discount">Discount (-)</span>
             <input type="number" id="discount"
-              class="num-input w-24 border-b border-gray-300 focus:border-brand bg-white px-1" value="400"
-              oninput="calculate()">
+              class="num-input w-24 border-b border-gray-300 focus:border-brand bg-white px-1 py-1 rounded-sm"
+              value="400" oninput="calculate()">
           </div>
-          <div class="flex justify-between items-center mt-3">
+          <div class="flex justify-between items-center mt-4">
             <span class="text-lg font-bold text-brand uppercase" data-i18n="grandTotal">Grand Total</span>
             <span class="text-xl font-bold text-brand"><span id="currency">৳</span> <span
                 id="grandTotal">47000</span></span>
@@ -208,7 +223,7 @@
         </div>
 
         <!-- Signature Area -->
-        <div class="mt-16 text-center">
+        <div class="mt-12 md:mt-16 text-center">
           <div class="w-48 mx-auto border-t-2 border-gray-400 pt-2">
             <span class="font-medium text-gray-600 text-sm" data-i18n="signature">Authorized Signature</span>
           </div>
@@ -219,6 +234,30 @@
   </div>
 
   <script>
+    // Initialize Auto-Data and Calculations on load
+      window.onload = function () {
+        generateAutoData();
+        calculate();
+      };
+
+      // Auto-generate Date and Invoice Number
+      function generateAutoData() {
+        const now = new Date();
+
+        // 1. Format date as YYYY-MM-DD
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+
+        // 2. Generate Invoice Number: GC-YYYYMMDD-XXXX (random)
+        const randomId = Math.floor(1000 + Math.random() * 9000);
+        const invoiceNo = `#GC-${year}${month}${day}-${randomId}`;
+
+        // 3. Inject into the DOM
+        document.getElementById('auto-date').value = formattedDate;
+        document.getElementById('auto-invoice-no').value = invoiceNo;
+      }
     // Dictionary for Bilingual Support
     const dict = {
       en: {
@@ -232,15 +271,13 @@
         exportBtn: "পিডিএফ ডাউনলোড", title: "চালান", invoiceNo: "চালান নম্বর:", date: "তারিখ:",
         from: "প্রেরক", billTo: "প্রাপক", description: "পণ্যের বিবরণ", qty: "পরিমাণ",
         price: "মূল্য", amount: "মোট মূল্য", addRow: "নতুন পণ্য যোগ করুন", paymentMethods: "পেমেন্ট মাধ্যম",
-        terms: "শর্তাবলী", subtotal: "উপমোট", discount: "ছাড় (-)",
+        terms: "শর্তাবলী", subtotal: "উপমোট", discount: "ছাড় (-)",
         grandTotal: "সর্বমোট", signature: "অনুমোদিত স্বাক্ষর", currencySymbol: "৳"
       }
     };
 
     // Initialize calculations on load
-    window.onload = function () {
-      calculate();
-    };
+    
 
     // Language Switcher Function
     function changeLanguage() {
@@ -319,9 +356,17 @@
       // Disable pointer events on inputs momentarily to remove any focus rings
       element.style.pointerEvents = 'none';
 
+      // Temporarily force desktop width so PDF doesn't render the stacked mobile view
+      const originalWidth = element.style.width;
+      const originalMaxWidth = element.style.maxWidth;
+      element.style.width = '800px';
+      element.style.maxWidth = '800px';
+
       html2pdf().set(opt).from(element).save().then(() => {
-        // Restore pointer events
+        // Restore pointer events and responsive width
         element.style.pointerEvents = 'auto';
+        element.style.width = originalWidth;
+        element.style.maxWidth = originalMaxWidth;
       });
     }
   </script>
