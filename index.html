@@ -7,8 +7,6 @@
   <title>Goodman Computer - Invoice Generator</title>
   <!-- Tailwind CSS for Professional Styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- html2pdf.js for high-quality PDF Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -62,32 +60,133 @@
         text-align: left;
       }
     }
+
+    /* Print media overrides to ensure high-quality browser printing */
+    @media print {
+      body {
+        background-color: #fff !important;
+        padding: 15mm 10mm !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Hide elements marked as non-printable */
+      [data-html2pdf-ignore="true"],
+      .no-print {
+        display: none !important;
+      }
+
+      /* Hide input fields when replaced by text spans */
+      .print-hidden-input {
+        display: none !important;
+      }
+
+      /* Format the invoice canvas to span full width nicely on A4 paper */
+      #invoice-canvas {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+      }
+
+      /* Force header components to stay in a row when printing */
+      .invoice-header-row {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        gap: 0 !important;
+      }
+      .invoice-header-row > div {
+        width: auto !important;
+      }
+      .invoice-header-row > div:last-child {
+        text-align: right !important;
+        background: transparent !important;
+        padding: 0 !important;
+      }
+      .invoice-header-row > div:last-child * {
+        text-align: right !important;
+      }
+
+      /* Force address blocks (From & Bill To) to stay in a row when printing */
+      .invoice-addresses-row {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        gap: 0 !important;
+      }
+      .invoice-addresses-row > div {
+        width: 48% !important;
+      }
+      .invoice-addresses-row > div:last-child {
+        text-align: right !important;
+        border-left: 1px solid #e5e7eb !important;
+        padding-left: 1rem !important;
+      }
+      .invoice-addresses-row > div:last-child * {
+        text-align: right !important;
+      }
+
+      /* Force totals & notes blocks to stay in a row when printing */
+      .invoice-totals-row {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        gap: 0 !important;
+      }
+      .invoice-totals-row > div:first-child {
+        width: 50% !important;
+        padding-right: 1rem !important;
+        order: 1 !important;
+      }
+      .invoice-totals-row > div:last-child {
+        width: 40% !important;
+        order: 2 !important;
+      }
+
+      /* Hide default date picker calendar icons when printing */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none;
+        -webkit-appearance: none;
+      }
+
+      /* Set margin to 0 to completely hide default browser headers and footers (page titles, URLs, etc.) */
+      @page {
+        size: A4;
+        margin: 0;
+      }
+    }
   </style>
 </head>
 
 <body class="py-4 md:py-8 px-2 md:px-4 text-gray-800">
 
-  <!-- Top Controls (Not included in PDF) -->
+  <!-- Top Controls (Not included in PDF/Print) -->
   <div
-    class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm gap-4 sm:gap-0"
+    class="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm gap-4"
     data-html2pdf-ignore="true">
-    <div class="flex items-center space-x-4">
-      <label class="font-semibold text-gray-600">Language:</label>
-      <select id="langSwitch" onchange="changeLanguage()"
-        class="border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:border-brand">
-        <option value="en">English</option>
-        <option value="bn">বাংলা (Bengali)</option>
-      </select>
+    <div class="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-start">
+      <div class="flex items-center space-x-4">
+        <label class="font-semibold text-gray-600">Language:</label>
+        <select id="langSwitch" onchange="changeLanguage()"
+          class="border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:border-brand">
+          <option value="en">English</option>
+          <option value="bn">বাংলা (Bengali)</option>
+        </select>
+      </div>
     </div>
-    <button onclick="exportPDF()"
-      class="w-full sm:w-auto justify-center bg-brand hover:bg-brand-dark text-white font-semibold py-2 px-6 rounded shadow-md transition duration-300 flex items-center">
-      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-        </path>
-      </svg>
-      <span data-i18n="exportBtn">Export PDF</span>
-    </button>
+    <div class="w-full sm:w-auto">
+      <button onclick="window.print()"
+        class="w-full sm:w-auto justify-center bg-brand hover:bg-brand-dark text-white font-semibold py-2 px-6 rounded shadow-md transition duration-300 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span data-i18n="printBtn">Print Invoice</span>
+      </button>
+    </div>
   </div>
 
   <!-- INVOICE CANVAS (This whole div gets exported) -->
@@ -95,7 +194,7 @@
 
     <!-- Header: Logo and Invoice Info -->
     <div
-      class="flex flex-col md:flex-row justify-between items-start border-b-2 border-brand pb-6 md:pb-8 mb-6 md:mb-8 gap-6 md:gap-0">
+      class="invoice-header-row flex flex-col md:flex-row justify-between items-start border-b-2 border-brand pb-6 md:pb-8 mb-6 md:mb-8 gap-6 md:gap-0">
       <!-- Brand Info & Logo -->
       <div class="flex items-center space-x-4 w-full md:w-auto justify-center md:justify-start">
         <img src="goodman_logo.png" alt="Goodman Logo" class="object-contain max-w-[200px] md:max-w-[300px] h-auto" />
@@ -117,7 +216,7 @@
     </div>
 
     <!-- Addresses -->
-    <div class="flex flex-col md:flex-row justify-between mb-8 md:mb-10 gap-8 md:gap-0">
+    <div class="invoice-addresses-row flex flex-col md:flex-row justify-between mb-8 md:mb-10 gap-8 md:gap-0">
       <div class="w-full md:w-1/2 md:pr-4">
         <h3 class="font-bold text-brand mb-2 border-b border-gray-200 inline-block pb-1" data-i18n="from">From</h3>
         <p class="font-bold text-gray-800">Goodman Computer</p>
@@ -187,7 +286,7 @@
     </div>
 
     <!-- Totals & Notes -->
-    <div class="flex flex-col md:flex-row justify-between mt-8 gap-8 md:gap-4">
+    <div class="invoice-totals-row flex flex-col md:flex-row justify-between mt-8 gap-8 md:gap-4">
       <!-- Notes -->
       <div class="w-full md:w-1/2 md:pr-4 order-2 md:order-1">
         <div class="mb-6">
@@ -223,8 +322,8 @@
         </div>
 
         <!-- Signature Area -->
-        <div class="mt-12 md:mt-16 text-center">
-          <div class="w-48 mx-auto border-t-2 border-gray-400 pt-2">
+        <div class="mt-12 md:mt-16 text-right">
+          <div class="w-48 ml-auto border-t-2 border-gray-400 pt-2">
             <span class="font-medium text-gray-600 text-sm" data-i18n="signature">Authorized Signature</span>
           </div>
         </div>
@@ -261,14 +360,14 @@
     // Dictionary for Bilingual Support
     const dict = {
       en: {
-        exportBtn: "Export PDF", title: "INVOICE", invoiceNo: "Invoice No:", date: "Date:",
+        printBtn: "Print Invoice", title: "INVOICE", invoiceNo: "Invoice No:", date: "Date:",
         from: "From", billTo: "Bill To", description: "Item Description", qty: "Qty",
         price: "Price", amount: "Amount", addRow: "Add New Item", paymentMethods: "Payment Methods",
         terms: "Terms & Conditions", subtotal: "Subtotal", discount: "Discount (-)",
         grandTotal: "Grand Total", signature: "Authorized Signature", currencySymbol: "৳"
       },
       bn: {
-        exportBtn: "পিডিএফ ডাউনলোড", title: "চালান", invoiceNo: "চালান নম্বর:", date: "তারিখ:",
+        printBtn: "মুদ্রণ করুন", title: "চালান", invoiceNo: "চালান নম্বর:", date: "তারিখ:",
         from: "প্রেরক", billTo: "প্রাপক", description: "পণ্যের বিবরণ", qty: "পরিমাণ",
         price: "মূল্য", amount: "মোট মূল্য", addRow: "নতুন পণ্য যোগ করুন", paymentMethods: "পেমেন্ট মাধ্যম",
         terms: "শর্তাবলী", subtotal: "উপমোট", discount: "ছাড় (-)",
@@ -340,35 +439,49 @@
       calculate();
     }
 
-    // PDF Export Function using html2pdf
-    function exportPDF() {
-      const element = document.getElementById('invoice-canvas');
-      const invoiceNo = document.querySelector('input[value^="#GC"]').value || 'invoice';
-
-      const opt = {
-        margin: [10, 0, 10, 0], // Top, Left, Bottom, Right
-        filename: `Goodman_Computer_${invoiceNo}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: { scale: 3, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      // Disable pointer events on inputs momentarily to remove any focus rings
-      element.style.pointerEvents = 'none';
-
-      // Temporarily force desktop width so PDF doesn't render the stacked mobile view
-      const originalWidth = element.style.width;
-      const originalMaxWidth = element.style.maxWidth;
-      element.style.width = '800px';
-      element.style.maxWidth = '800px';
-
-      html2pdf().set(opt).from(element).save().then(() => {
-        // Restore pointer events and responsive width
-        element.style.pointerEvents = 'auto';
-        element.style.width = originalWidth;
-        element.style.maxWidth = originalMaxWidth;
+    // Before/After print events to dynamically convert input fields to static text spans
+    window.addEventListener('beforeprint', () => {
+      const inputs = document.querySelectorAll('#invoice-canvas input, #invoice-canvas textarea');
+      inputs.forEach(input => {
+        const span = document.createElement('span');
+        span.className = 'print-temp-text';
+        
+        // Copy value or empty space (avoiding placeholder rendering in print)
+        if (input.tagName === 'TEXTAREA') {
+          span.style.whiteSpace = 'pre-wrap';
+          span.style.display = 'block';
+          span.textContent = input.value || '';
+        } else {
+          span.textContent = input.value || '';
+        }
+        
+        // Match style and alignment
+        const computedStyle = window.getComputedStyle(input);
+        if (computedStyle.textAlign === 'right' || input.classList.contains('num-input')) {
+          span.style.display = 'block';
+          span.style.textAlign = 'right';
+        } else {
+          span.style.display = 'inline-block';
+        }
+        
+        span.style.fontFamily = computedStyle.fontFamily;
+        span.style.fontSize = computedStyle.fontSize;
+        span.style.fontWeight = computedStyle.fontWeight;
+        span.style.color = computedStyle.color;
+        span.style.width = '100%';
+        
+        // Hide input and insert span
+        input.classList.add('print-hidden-input');
+        input.parentNode.insertBefore(span, input);
       });
-    }
+    });
+
+    window.addEventListener('afterprint', () => {
+      document.querySelectorAll('.print-temp-text').forEach(el => el.remove());
+      document.querySelectorAll('.print-hidden-input').forEach(input => {
+        input.classList.remove('print-hidden-input');
+      });
+    });
   </script>
 </body>
 

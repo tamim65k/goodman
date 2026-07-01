@@ -1,0 +1,1732 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodman Computer — Invoice Studio</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --surface: #111318;
+            --surface2: #171b22;
+            --surface3: #1e232d;
+            --border: rgba(255, 255, 255, 0.07);
+            --border2: rgba(255, 255, 255, 0.12);
+            --amber: #f5a623;
+            --amber-dim: #c47d0e;
+            --amber-glow: rgba(245, 166, 35, 0.18);
+            --amber-subtle: rgba(245, 166, 35, 0.08);
+            --text: #f0eee8;
+            --text2: #9a9590;
+            --text3: #5a5650;
+            --green: #2dd4a0;
+            --red: #ff6b6b;
+            --blue: #5b9cf6;
+            --r: 10px;
+            --r2: 6px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── ANIMATED BACKGROUND ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(245, 166, 35, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 30% at 80% 80%, rgba(91, 156, 246, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 12, 16, 0.92);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 64px;
+        }
+
+        /* ── LOGO MARK ── */
+        .logo-mark {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+        }
+
+        .logo-text-wrap {
+            line-height: 1.1;
+        }
+
+        .logo-name {
+            font-family: 'Fraunces', serif;
+            font-weight: 900;
+            font-size: 15.5px;
+            color: var(--text);
+            letter-spacing: 0.01em;
+        }
+
+        .logo-sub {
+            font-family: 'DM Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-top: 1px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 9px;
+            align-items: center;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: none;
+            font-family: 'Sora', sans-serif;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+
+        .btn svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text2);
+            border: 1px solid var(--border2);
+        }
+
+        .btn-ghost:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-amber {
+            background: var(--amber);
+            color: #0a0c10;
+            box-shadow: 0 0 20px rgba(245, 166, 35, 0.3);
+        }
+
+        .btn-amber:hover {
+            background: #f8b84a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 28px rgba(245, 166, 35, 0.45);
+        }
+
+        .btn-amber:active {
+            transform: translateY(0);
+        }
+
+        .btn-dim {
+            background: var(--surface3);
+            color: var(--text2);
+        }
+
+        .btn-dim:hover {
+            background: var(--surface3);
+            color: var(--text);
+            border: 1px solid var(--border2);
+        }
+
+        /* ── LAYOUT ── */
+        .layout {
+            position: relative;
+            z-index: 1;
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 28px 24px;
+            display: grid;
+            grid-template-columns: 1fr 430px;
+            gap: 24px;
+        }
+
+        @media(max-width:960px) {
+            .layout {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+
+            .topbar {
+                padding: 0 16px;
+            }
+        }
+
+        /* ── SECTION CARDS ── */
+        .sec {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .sec:last-child {
+            margin-bottom: 0;
+        }
+
+        .sec-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px 13px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .sec-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: var(--amber-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sec-icon svg {
+            width: 14px;
+            height: 14px;
+            color: var(--amber);
+        }
+
+        .sec-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text);
+            letter-spacing: 0.01em;
+        }
+
+        .sec-body {
+            padding: 20px;
+        }
+
+        /* ── FORM ── */
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .span2 {
+            grid-column: 1/-1;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: var(--r2);
+            padding: 10px 13px;
+            font-family: 'Sora', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.15s;
+            width: 100%;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: var(--amber);
+            box-shadow: 0 0 0 3px var(--amber-glow);
+            background: rgba(30, 35, 45, 0.9);
+        }
+
+        .field input::placeholder,
+        .field textarea::placeholder {
+            color: var(--text3);
+        }
+
+        .field select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5650' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+            cursor: pointer;
+        }
+
+        .field select option {
+            background: #1e232d;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 68px;
+            line-height: 1.6;
+        }
+
+        /* ── ITEMS TABLE ── */
+        .items-header {
+            display: grid;
+            grid-template-columns: 1fr 80px 110px 110px 36px;
+            gap: 6px;
+            padding: 8px 14px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .items-header span {
+            font-family: 'DM Mono', monospace;
+            font-size: 9.5px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .items-header span:nth-child(2),
+        .items-header span:nth-child(3),
+        .items-header span:nth-child(4) {
+            text-align: right;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 110px 110px 36px;
+            gap: 6px;
+            padding: 8px 14px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.12s;
+        }
+
+        .item-row:hover {
+            background: var(--surface2);
+        }
+
+        .item-row input {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            padding: 6px 8px;
+            font-family: 'Sora', sans-serif;
+            font-size: 12.5px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.12s;
+            width: 100%;
+        }
+
+        .item-row input:focus {
+            border-color: var(--amber);
+            background: var(--surface3);
+            box-shadow: 0 0 0 2px var(--amber-glow);
+        }
+
+        .item-row input[type=number] {
+            text-align: right;
+        }
+
+        .item-row input::placeholder {
+            color: var(--text3);
+        }
+
+        .item-amt {
+            font-family: 'DM Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text);
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .item-del {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text3);
+            font-size: 16px;
+            border-radius: 5px;
+            padding: 4px 7px;
+            transition: all 0.12s;
+        }
+
+        .item-del:hover {
+            color: var(--red);
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .add-row-wrap {
+            padding: 12px 14px 16px;
+        }
+
+        /* ── TOTALS ── */
+        .totals-grid {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .t-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .t-lbl {
+            color: var(--text2);
+        }
+
+        .t-row.grand {
+            border-top: 1px solid var(--border2);
+            margin-top: 4px;
+            padding-top: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            font-family: 'Fraunces', serif;
+        }
+
+        .t-row.grand .t-lbl {
+            color: var(--text);
+        }
+
+        .t-row.grand .t-val {
+            color: var(--amber);
+        }
+
+        .tax-inp {
+            width: 56px;
+            text-align: right;
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            padding: 4px 7px;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+            outline: none;
+        }
+
+        .tax-inp:focus {
+            border-color: var(--amber);
+        }
+
+        /* ── STATUS PILLS ── */
+        .status-row {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .spl {
+            padding: 5px 13px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: all 0.14s;
+            font-family: 'DM Mono', monospace;
+            letter-spacing: 0.06em;
+        }
+
+        .spl.draft {
+            background: rgba(154, 149, 144, 0.1);
+            color: var(--text3);
+            border-color: rgba(154, 149, 144, 0.2);
+        }
+
+        .spl.sent {
+            background: rgba(91, 156, 246, 0.1);
+            color: var(--blue);
+            border-color: rgba(91, 156, 246, 0.25);
+        }
+
+        .spl.paid {
+            background: rgba(45, 212, 160, 0.1);
+            color: var(--green);
+            border-color: rgba(45, 212, 160, 0.25);
+        }
+
+        .spl.overdue {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--red);
+            border-color: rgba(255, 107, 107, 0.25);
+        }
+
+        .spl.active {
+            box-shadow: 0 0 0 2.5px currentColor;
+        }
+
+        /* ── RIGHT PANEL ── */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ── ACTIONS CARD ── */
+        .actions-card .sec-body {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 9px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Sora', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.16s;
+            letter-spacing: 0.01em;
+        }
+
+        .action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .ab-primary {
+            background: linear-gradient(135deg, var(--amber), #e8920e);
+            color: #0a0c10;
+            box-shadow: 0 2px 20px rgba(245, 166, 35, 0.3);
+        }
+
+        .ab-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 28px rgba(245, 166, 35, 0.45);
+        }
+
+        .ab-secondary {
+            background: var(--surface3);
+            color: var(--text2);
+            border: 1px solid var(--border2);
+        }
+
+        .ab-secondary:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        /* ── PREVIEW ── */
+        .preview-shell {
+            border-radius: var(--r);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .preview-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 17px;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .preview-body {
+            background: #fff;
+            max-height: 780px;
+            overflow-y: auto;
+        }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            transform: translateY(60px);
+            opacity: 0;
+            transition: all 0.28s ease;
+            z-index: 9999;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-family: 'Sora', sans-serif;
+        }
+
+        #toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* ── DIVIDER ── */
+        .sec-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* ── PRINT OVERRIDE ── */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .topbar,
+            .left-col,
+            .right-col .sec,
+            .no-print {
+                display: none !important;
+            }
+
+            .layout {
+                display: block;
+                padding: 0;
+            }
+
+            .preview-shell {
+                border: none;
+                box-shadow: none;
+            }
+
+            .preview-topbar {
+                display: none;
+            }
+
+            .preview-body {
+                max-height: none;
+                overflow: visible;
+            }
+
+            @page {
+                size: A4;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOPBAR -->
+    <nav class="topbar">
+        <a class="logo-mark" href="#">
+            <!-- GOODMAN COMPUTER LOGO -->
+            <svg class="logo-icon" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="42" height="42" rx="10" fill="#0f1318" />
+                <!-- Screen bezel -->
+                <rect x="5" y="7" width="32" height="21" rx="3" fill="#1a2030" />
+                <!-- Screen glow background -->
+                <rect x="7" y="9" width="28" height="17" rx="2" fill="#0d1520" />
+                <!-- Amber circuit lines -->
+                <path d="M10 18 L16 18 L16 14 L22 14" stroke="#f5a623" stroke-width="1.2" stroke-linecap="round" />
+                <path d="M22 14 L26 14 L26 18 L32 18" stroke="#f5a623" stroke-width="1.2" stroke-linecap="round" />
+                <path d="M10 22 L14 22 L14 19 L20 19 L20 22 L32 22" stroke="rgba(245,166,35,0.5)" stroke-width="0.8"
+                    stroke-linecap="round" />
+                <!-- Nodes -->
+                <circle cx="16" cy="14" r="1.5" fill="#f5a623" />
+                <circle cx="22" cy="14" r="1.5" fill="#f5a623" />
+                <circle cx="26" cy="18" r="1.2" fill="#f5a623" opacity="0.7" />
+                <circle cx="20" cy="19" r="1.2" fill="#f5a623" opacity="0.5" />
+                <!-- G letterform subtle -->
+                <path d="M19 17 C19 15.3 20.1 14.5 21.5 14.5 C22.5 14.5 23.2 15 23.5 15.5 L23.5 17 L21.5 17"
+                    stroke="rgba(255,255,255,0.25)" stroke-width="0.8" fill="none" stroke-linecap="round" />
+                <!-- Monitor stand neck -->
+                <rect x="18" y="28" width="6" height="4" rx="1" fill="#1a2030" />
+                <!-- Stand base -->
+                <rect x="13" y="32" width="16" height="2.5" rx="1.25" fill="#1a2030" />
+                <!-- Amber accent on bezel bottom -->
+                <rect x="5" y="26" width="32" height="2" rx="0" fill="none" stroke="#f5a623" stroke-width="0.5"
+                    opacity="0.4" />
+                <!-- Power dot -->
+                <circle cx="21" cy="27.5" r="1" fill="#f5a623" opacity="0.8" />
+            </svg>
+            <div class="logo-text-wrap">
+                <div class="logo-name">Goodman Computer</div>
+                <div class="logo-sub">Invoice Studio</div>
+            </div>
+        </a>
+        <div class="nav-actions">
+            <button class="btn btn-ghost" onclick="clearForm()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+                New
+            </button>
+            <button class="btn btn-amber" onclick="exportPDF()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export PDF
+            </button>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <!-- ═══════ LEFT COLUMN ═══════ -->
+        <div class="left-col">
+
+            <!-- FROM -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg></div>
+                    <span class="sec-title">Your Company</span>
+                </div>
+                <div class="sec-body">
+                    <div class="grid2">
+                        <div class="field span2"><label>Company Name</label><input id="fromName"
+                                value="Goodman Computer" oninput="render()"></div>
+                        <div class="field span2"><label>Address</label><input id="fromAddr"
+                                placeholder="123 Tech Avenue, Dhaka, Bangladesh" oninput="render()"></div>
+                        <div class="field"><label>Phone</label><input id="fromPhone" placeholder="+880 1XXX-XXXXXX"
+                                oninput="render()"></div>
+                        <div class="field"><label>Email</label><input id="fromEmail"
+                                placeholder="billing@goodmancomputer.com" oninput="render()"></div>
+                        <div class="field"><label>Website</label><input id="fromWeb"
+                                placeholder="www.goodmancomputer.com" oninput="render()"></div>
+                        <div class="field"><label>VAT / Tax ID</label><input id="fromTax" placeholder="VAT-000000"
+                                oninput="render()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BILL TO -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg></div>
+                    <span class="sec-title">Bill To</span>
+                </div>
+                <div class="sec-body">
+                    <div class="grid2">
+                        <div class="field span2"><label>Client / Company</label><input id="toName"
+                                placeholder="Client Name or Company" oninput="render()"></div>
+                        <div class="field span2"><label>Address</label><input id="toAddr" placeholder="Client Address"
+                                oninput="render()"></div>
+                        <div class="field"><label>Email</label><input id="toEmail" placeholder="client@email.com"
+                                oninput="render()"></div>
+                        <div class="field"><label>Phone</label><input id="toPhone" placeholder="+880 1XXX-XXXXXX"
+                                oninput="render()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVOICE DETAILS -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg></div>
+                    <span class="sec-title">Invoice Details</span>
+                </div>
+                <div class="sec-body">
+                    <div class="grid3">
+                        <div class="field"><label>Invoice No.</label><input id="invNum" value="GC-0001"
+                                oninput="render()"></div>
+                        <div class="field"><label>Issue Date</label><input id="issueDate" type="date"
+                                oninput="render()"></div>
+                        <div class="field"><label>Due Date</label><input id="dueDate" type="date" oninput="render()">
+                        </div>
+                        <div class="field"><label>Currency</label>
+                            <select id="currency" onchange="render()">
+                                <option value="BDT">BDT — ৳</option>
+                                <option value="USD">USD — $</option>
+                                <option value="EUR">EUR — €</option>
+                                <option value="GBP">GBP — £</option>
+                                <option value="INR">INR — ₹</option>
+                                <option value="AED">AED — د.إ</option>
+                            </select>
+                        </div>
+                        <div class="field"><label>Payment Method</label>
+                            <select id="payMethod" onchange="render()">
+                                <option>Bank Transfer</option>
+                                <option>bKash</option>
+                                <option>Nagad</option>
+                                <option>Cash</option>
+                                <option>Credit Card</option>
+                                <option>Cheque</option>
+                            </select>
+                        </div>
+                        <div class="field"><label>Status</label>
+                            <select id="status" onchange="render()">
+                                <option>Draft</option>
+                                <option>Sent</option>
+                                <option>Paid</option>
+                                <option>Overdue</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LINE ITEMS -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6" />
+                            <line x1="8" y1="12" x2="21" y2="12" />
+                            <line x1="8" y1="18" x2="21" y2="18" />
+                            <line x1="3" y1="6" x2="3.01" y2="6" />
+                            <line x1="3" y1="12" x2="3.01" y2="12" />
+                            <line x1="3" y1="18" x2="3.01" y2="18" />
+                        </svg></div>
+                    <span class="sec-title">Line Items</span>
+                </div>
+                <div class="items-header">
+                    <span>Description</span>
+                    <span style="text-align:right">Qty</span>
+                    <span style="text-align:right">Unit Price</span>
+                    <span style="text-align:right">Amount</span>
+                    <span></span>
+                </div>
+                <div id="itemsBody"></div>
+                <div class="add-row-wrap">
+                    <button class="btn btn-dim" onclick="addItem()" style="font-size:12px;padding:8px 14px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            style="width:13px;height:13px;">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Add Line Item
+                    </button>
+                </div>
+                <!-- TOTALS -->
+                <div style="padding:0 14px 20px;">
+                    <div class="totals-grid">
+                        <div class="t-row"><span class="t-lbl">Subtotal</span><span id="subDisp" class="t-val"
+                                style="font-family:'DM Mono',monospace;">৳ 0.00</span></div>
+                        <div class="t-row">
+                            <span class="t-lbl">Tax %</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <input class="tax-inp" id="taxRate" type="number" min="0" max="100" value="0"
+                                    oninput="calcTotals()">
+                                <span id="taxDisp" style="font-family:'DM Mono',monospace;font-size:12.5px;">৳
+                                    0.00</span>
+                            </div>
+                        </div>
+                        <div class="t-row">
+                            <span class="t-lbl">Discount %</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <input class="tax-inp" id="discRate" type="number" min="0" max="100" value="0"
+                                    oninput="calcTotals()">
+                                <span id="discDisp"
+                                    style="font-family:'DM Mono',monospace;font-size:12.5px;color:var(--red);">— ৳
+                                    0.00</span>
+                            </div>
+                        </div>
+                        <div class="t-row grand">
+                            <span class="t-lbl">Total Due</span>
+                            <span id="totalDisp" class="t-val" style="font-family:'DM Mono',monospace;">৳ 0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTES -->
+            <div class="sec">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg></div>
+                    <span class="sec-title">Notes & Payment</span>
+                </div>
+                <div class="sec-body">
+                    <div class="grid2">
+                        <div class="field span2"><label>Notes to Client</label><textarea id="notes"
+                                placeholder="Thank you for your business! Payment within 30 days."
+                                oninput="render()"></textarea></div>
+                        <div class="field span2"><label>Payment Info / Terms</label><textarea id="payInfo"
+                                placeholder="Bank Name · Account: XXXX · Branch: Main" oninput="render()"></textarea>
+                        </div>
+                        <div class="field"><label>Prepared By</label><input id="prepBy" placeholder="Your Name"
+                                oninput="render()"></div>
+                        <div class="field"><label>Designation</label><input id="prepTitle" placeholder="Finance Manager"
+                                oninput="render()"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /left -->
+
+        <!-- ═══════ RIGHT COLUMN ═══════ -->
+        <div class="right-col">
+
+            <!-- ACTIONS -->
+            <div class="sec actions-card no-print">
+                <div class="sec-head">
+                    <div class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg></div>
+                    <span class="sec-title">Quick Actions</span>
+                </div>
+                <div class="sec-body">
+                    <button class="action-btn ab-primary" onclick="exportPDF()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Download PDF Invoice
+                    </button>
+                    <button class="action-btn ab-secondary" onclick="window.print()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9" />
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                            <rect x="6" y="14" width="12" height="8" />
+                        </svg>
+                        Print Invoice
+                    </button>
+                    <button class="action-btn ab-secondary" onclick="copyText()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy Summary
+                    </button>
+                </div>
+            </div>
+
+            <!-- PREVIEW -->
+            <div class="preview-shell no-print">
+                <div class="preview-topbar">
+                    <span class="preview-label">Live Preview</span>
+                    <div class="live-dot" title="Auto-updating"></div>
+                </div>
+                <div class="preview-body">
+                    <div id="invPreview"></div>
+                </div>
+            </div>
+
+        </div><!-- /right -->
+    </div>
+
+    <div id="toast"><span id="toastMsg"></span></div>
+
+    <style>
+        /* ── INVOICE PREVIEW INTERNAL STYLES ── */
+        #invPreview {
+            font-family: 'Sora', sans-serif;
+            background: #fff;
+            color: #111;
+            padding: 36px 36px 32px;
+        }
+
+        .inv-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+        }
+
+        .inv-logo-area {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .inv-title-area {
+            text-align: right;
+        }
+
+        .inv-title {
+            font-family: 'Fraunces', serif;
+            font-size: 30px;
+            font-weight: 900;
+            color: #111;
+            letter-spacing: 0.05em;
+        }
+
+        .inv-num {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .inv-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .inv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 26px;
+        }
+
+        .inv-section-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .inv-section-val {
+            font-size: 11.5px;
+            color: #111;
+            line-height: 1.65;
+        }
+
+        .inv-section-val strong {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 1px;
+        }
+
+        .inv-divider {
+            height: 1px;
+            background: #111;
+            margin-bottom: 0;
+        }
+
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .inv-table th {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #888;
+            padding: 9px 10px;
+            border-bottom: 1.5px solid #111;
+            text-align: left;
+        }
+
+        .inv-table th:not(:first-child) {
+            text-align: right;
+        }
+
+        .inv-table td {
+            font-size: 11.5px;
+            padding: 8px 10px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #111;
+        }
+
+        .inv-table td:not(:first-child) {
+            text-align: right;
+        }
+
+        .inv-totals {
+            margin-left: auto;
+            width: 52%;
+        }
+
+        .inv-t-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 3.5px 0;
+        }
+
+        .inv-t-lbl {
+            color: #888;
+        }
+
+        .inv-t-grand {
+            display: flex;
+            justify-content: space-between;
+            border-top: 2px solid #111;
+            margin-top: 7px;
+            padding-top: 9px;
+            font-size: 15px;
+            font-weight: 800;
+            font-family: 'Fraunces', serif;
+        }
+
+        .inv-footer {
+            margin-top: 22px;
+            padding-top: 16px;
+            border-top: 1px solid #e8e8e8;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .inv-footer-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .inv-footer-val {
+            font-size: 10.5px;
+            color: #555;
+            line-height: 1.65;
+        }
+
+        .inv-sig-name {
+            font-family: 'Fraunces', serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .inv-sig-line {
+            width: 120px;
+            height: 1px;
+            background: #ddd;
+            margin-bottom: 6px;
+        }
+
+        .inv-amber-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #f5a623, #e8920e, #f5a623);
+            margin-bottom: 0;
+        }
+
+        .inv-brand-footer {
+            background: #0f1318;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inv-brand-footer-left {
+            font-family: 'Fraunces', serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .inv-brand-footer-right {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            color: #555;
+        }
+    </style>
+
+    <script>
+        // ════════════════════════════════════
+        // STATE
+        // ════════════════════════════════════
+        const CSYM = { BDT: '৳', USD: '$', EUR: '€', GBP: '£', INR: '₹', AED: 'د.إ' };
+        let items = [
+            { desc: 'Computer Repair & Diagnostics', qty: 1, price: 2500 },
+            { desc: 'RAM Upgrade 8GB DDR4', qty: 2, price: 4200 },
+            { desc: 'Annual Maintenance Contract', qty: 1, price: 8000 },
+        ];
+
+        const g = id => (document.getElementById(id) || {}).value || '';
+        const sym = () => CSYM[g('currency')] || '৳';
+
+        function subtotal() { return items.reduce((s, i) => s + i.qty * i.price, 0); }
+
+        // ════════════════════════════════════
+        // INIT
+        // ════════════════════════════════════
+        window.onload = () => {
+            const today = new Date();
+            const due = new Date(); due.setDate(due.getDate() + 30);
+            document.getElementById('issueDate').value = today.toISOString().split('T')[0];
+            document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+            document.getElementById('invNum').value = 'GC-' + String(Math.floor(1000 + Math.random() * 9000));
+            buildItems(); render();
+        };
+
+        // ════════════════════════════════════
+        // ITEMS
+        // ════════════════════════════════════
+        function buildItems() {
+            const body = document.getElementById('itemsBody');
+            body.innerHTML = '';
+            items.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                div.innerHTML = `
+      <input type="text" value="${item.desc}" placeholder="Item description" oninput="items[${i}].desc=this.value;render()">
+      <input type="number" min="0" step="1" value="${item.qty}" oninput="items[${i}].qty=parseFloat(this.value)||0;refreshAmts();render()">
+      <input type="number" min="0" step="0.01" value="${item.price}" oninput="items[${i}].price=parseFloat(this.value)||0;refreshAmts();render()">
+      <div class="item-amt" id="ra${i}">${sym()} ${(item.qty * item.price).toFixed(2)}</div>
+      <button class="item-del" onclick="removeItem(${i})">×</button>
+    `;
+                body.appendChild(div);
+            });
+            calcTotals();
+        }
+
+        function refreshAmts() {
+            items.forEach((item, i) => {
+                const el = document.getElementById('ra' + i);
+                if (el) el.textContent = sym() + ' ' + (item.qty * item.price).toFixed(2);
+            });
+            calcTotals();
+        }
+
+        function addItem() {
+            items.push({ desc: '', qty: 1, price: 0 });
+            buildItems(); render();
+            setTimeout(() => {
+                const rows = document.querySelectorAll('.item-row');
+                const last = rows[rows.length - 1];
+                if (last) last.querySelector('input').focus();
+            }, 50);
+        }
+
+        function removeItem(i) {
+            if (items.length === 1) { toast('⚠ At least one item required'); return; }
+            items.splice(i, 1); buildItems(); render();
+        }
+
+        // ════════════════════════════════════
+        // TOTALS
+        // ════════════════════════════════════
+        function calcTotals() {
+            const s = sym();
+            const sub = subtotal();
+            const tax = sub * (parseFloat(g('taxRate')) || 0) / 100;
+            const disc = sub * (parseFloat(g('discRate')) || 0) / 100;
+            const tot = sub + tax - disc;
+            document.getElementById('subDisp').textContent = s + ' ' + sub.toFixed(2);
+            document.getElementById('taxDisp').textContent = s + ' ' + tax.toFixed(2);
+            document.getElementById('discDisp').textContent = '— ' + s + ' ' + disc.toFixed(2);
+            document.getElementById('totalDisp').textContent = s + ' ' + tot.toFixed(2);
+            render();
+        }
+
+        // ════════════════════════════════════
+        // INVOICE PREVIEW RENDER
+        // ════════════════════════════════════
+        function render() {
+            const s = sym();
+            const sub = subtotal();
+            const taxRate = parseFloat(g('taxRate')) || 0;
+            const discRate = parseFloat(g('discRate')) || 0;
+            const tax = sub * taxRate / 100;
+            const disc = sub * discRate / 100;
+            const total = sub + tax - disc;
+            const status = g('status');
+
+            const statusStyles = {
+                Draft: { bg: '#f0f0f0', color: '#888' },
+                Sent: { bg: '#e8f0ff', color: '#3366cc' },
+                Paid: { bg: '#e6f8f0', color: '#1a7a52' },
+                Overdue: { bg: '#fff0f0', color: '#cc2200' }
+            };
+            const ss = statusStyles[status] || statusStyles.Draft;
+
+            const rows = items.map(item => `
+    <tr>
+      <td style="color:#111;font-size:11.5px;">${item.desc || '—'}</td>
+      <td style="color:#555;text-align:right;">${item.qty}</td>
+      <td style="color:#555;text-align:right;">${s}${item.price.toFixed(2)}</td>
+      <td style="font-weight:700;text-align:right;">${s}${(item.qty * item.price).toFixed(2)}</td>
+    </tr>`).join('');
+
+            document.getElementById('invPreview').innerHTML = `
+<div class="inv-amber-bar"></div>
+<div style="padding:36px 36px 32px;background:#fff;">
+  <!-- TOP -->
+  <div class="inv-top">
+    <div class="inv-logo-area">
+      <svg width="38" height="38" viewBox="0 0 42 42" fill="none">
+        <rect width="42" height="42" rx="10" fill="#0f1318"/>
+        <rect x="5" y="7" width="32" height="21" rx="3" fill="#1a2030"/>
+        <rect x="7" y="9" width="28" height="17" rx="2" fill="#0d1520"/>
+        <path d="M10 18 L16 18 L16 14 L22 14" stroke="#f5a623" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M22 14 L26 14 L26 18 L32 18" stroke="#f5a623" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="16" cy="14" r="1.5" fill="#f5a623"/>
+        <circle cx="22" cy="14" r="1.5" fill="#f5a623"/>
+        <rect x="18" y="28" width="6" height="4" rx="1" fill="#1a2030"/>
+        <rect x="13" y="32" width="16" height="2.5" rx="1.25" fill="#1a2030"/>
+        <circle cx="21" cy="27.5" r="1" fill="#f5a623" opacity="0.8"/>
+      </svg>
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:900;color:#111;">${g('fromName') || 'Goodman Computer'}</div>
+        <div style="font-size:9.5px;color:#aaa;letter-spacing:0.1em;text-transform:uppercase;margin-top:1px;">Technology Solutions</div>
+        ${g('fromAddr') ? `<div style="font-size:10px;color:#888;margin-top:3px;">${g('fromAddr')}</div>` : ''}
+        ${g('fromEmail') ? `<div style="font-size:10px;color:#555;margin-top:1px;">${g('fromEmail')}</div>` : ''}
+      </div>
+    </div>
+    <div class="inv-title-area">
+      <div class="inv-title">INVOICE</div>
+      <div class="inv-num">${g('invNum') || '—'}</div>
+      <div><span class="inv-status" style="background:${ss.bg};color:${ss.color};">${status || 'DRAFT'}</span></div>
+    </div>
+  </div>
+
+  <!-- BILL TO + DATES -->
+  <div class="inv-grid">
+    <div>
+      <div class="inv-section-label">Bill To</div>
+      <div class="inv-section-val">
+        <strong>${g('toName') || '—'}</strong>
+        ${g('toAddr') ? `<span>${g('toAddr')}</span><br>` : ''}
+        ${g('toPhone') ? `<span>${g('toPhone')}</span><br>` : ''}
+        ${g('toEmail') ? `<span style="color:#3366cc;">${g('toEmail')}</span>` : ''}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <div>
+          <div class="inv-section-label">Issue Date</div>
+          <div style="font-size:12px;font-weight:600;">${g('issueDate') || '—'}</div>
+        </div>
+        <div>
+          <div class="inv-section-label">Due Date</div>
+          <div style="font-size:12px;font-weight:600;">${g('dueDate') || '—'}</div>
+        </div>
+        <div>
+          <div class="inv-section-label">Payment</div>
+          <div style="font-size:11.5px;color:#555;">${g('payMethod') || '—'}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AMBER RULE -->
+  <div style="height:2px;background:linear-gradient(90deg,#f5a623,#e8920e,transparent);margin-bottom:16px;border-radius:1px;"></div>
+
+  <!-- TABLE -->
+  <table class="inv-table">
+    <thead><tr>
+      <th>Description</th>
+      <th style="text-align:right">Qty</th>
+      <th style="text-align:right">Unit Price</th>
+      <th style="text-align:right">Amount</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <!-- TOTALS -->
+  <div class="inv-totals">
+    <div class="inv-t-row"><span class="inv-t-lbl">Subtotal</span><span style="font-family:'Courier New',monospace;">${s}${sub.toFixed(2)}</span></div>
+    ${taxRate > 0 ? `<div class="inv-t-row"><span class="inv-t-lbl">Tax (${taxRate}%)</span><span style="font-family:'Courier New',monospace;">${s}${tax.toFixed(2)}</span></div>` : ''}
+    ${discRate > 0 ? `<div class="inv-t-row"><span class="inv-t-lbl">Discount (${discRate}%)</span><span style="color:#cc2200;font-family:'Courier New',monospace;">−${s}${disc.toFixed(2)}</span></div>` : ''}
+    <div class="inv-t-grand">
+      <span>Total Due</span>
+      <span style="color:#f5a623;">${s}${total.toFixed(2)}</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="inv-footer">
+    <div>
+      ${g('notes') ? `<div class="inv-footer-label">Notes</div><div class="inv-footer-val">${g('notes')}</div>` : ''}
+      ${g('payInfo') ? `<div class="inv-footer-label" style="margin-top:10px;">Payment Info</div><div class="inv-footer-val">${g('payInfo')}</div>` : ''}
+    </div>
+    <div style="text-align:right;">
+      <div class="inv-sig-line" style="margin-left:auto;"></div>
+      ${g('prepBy') ? `<div class="inv-sig-name">${g('prepBy')}</div>` : ''}
+      ${g('prepTitle') ? `<div style="font-size:11px;color:#888;">${g('prepTitle')}</div>` : ''}
+      <div style="font-size:10.5px;color:#888;margin-top:2px;">${g('fromName') || 'Goodman Computer'}</div>
+    </div>
+  </div>
+</div>
+<div class="inv-brand-footer">
+  <span class="inv-brand-footer-left">Goodman Computer</span>
+  <span class="inv-brand-footer-right">${g('fromWeb') || 'www.goodmancomputer.com'} · ${g('fromPhone') || ''}</span>
+</div>`;
+        }
+
+        // ════════════════════════════════════
+        // PDF EXPORT
+        // ════════════════════════════════════
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const W = 210, M = 16;
+            const s = sym();
+            const sub = subtotal();
+            const taxRate = parseFloat(g('taxRate')) || 0;
+            const discRate = parseFloat(g('discRate')) || 0;
+            const tax = sub * taxRate / 100;
+            const disc = sub * discRate / 100;
+            const total = sub + tax - disc;
+            const status = g('status');
+            const H = 297;
+            let y = 0;
+
+            // ── AMBER top bar ──
+            doc.setFillColor(245, 166, 35);
+            doc.rect(0, 0, W, 4, 'F');
+
+            // ── Dark header band ──
+            doc.setFillColor(15, 19, 24);
+            doc.rect(0, 4, W, 36, 'F');
+
+            // ── Company name ──
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.setTextColor(255, 255, 255);
+            doc.text(g('fromName') || 'Goodman Computer', M, 22);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(120, 115, 110);
+            doc.text('TECHNOLOGY SOLUTIONS', M, 28);
+
+            if (g('fromAddr')) {
+                doc.setFontSize(7);
+                doc.setTextColor(100, 95, 90);
+                doc.text(g('fromAddr'), M, 33.5);
+            }
+
+            // ── INVOICE label right ──
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(28);
+            doc.setTextColor(255, 255, 255);
+            doc.text('INVOICE', W - M, 23, { align: 'right' });
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(120, 115, 110);
+            doc.text(g('invNum') || '—', W - M, 30, { align: 'right' });
+
+            // ── Status badge ──
+            const stColors = { Draft: [100, 100, 100], Sent: [51, 102, 204], Paid: [26, 122, 82], Overdue: [204, 34, 0] };
+            const sc = stColors[status] || stColors.Draft;
+            doc.setFillColor(sc[0], sc[1], sc[2]);
+            const stw = doc.getTextWidth((status || 'DRAFT').toUpperCase()) + 8;
+            doc.roundedRect(W - M - stw, 33, stw, 5.5, 2, 2, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(255, 255, 255);
+            doc.text((status || 'DRAFT').toUpperCase(), W - M - stw / 2, 36.8, { align: 'center' });
+
+            y = 52;
+
+            // ── Bill To + Dates Grid ──
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(170, 165, 160);
+            doc.text('BILL TO', M, y);
+            doc.text('INVOICE DETAILS', W / 2 + 4, y);
+            y += 5;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(17, 17, 17);
+            doc.text(g('toName') || '—', M, y);
+            y += 5;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(85, 80, 75);
+            [g('toAddr'), g('toPhone'), g('toEmail')].filter(Boolean).forEach(ln => {
+                doc.text(ln, M, y); y += 4.5;
+            });
+
+            // Dates right side
+            const detailY = 57;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(170, 165, 160);
+            doc.text('ISSUE DATE', W / 2 + 4, detailY);
+            doc.text('DUE DATE', W / 2 + 50, detailY);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(17, 17, 17);
+            doc.text(g('issueDate') || '—', W / 2 + 4, detailY + 5);
+            doc.text(g('dueDate') || '—', W / 2 + 50, detailY + 5);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(170, 165, 160);
+            doc.text('PAYMENT METHOD', W / 2 + 4, detailY + 12);
+            doc.setFontSize(8.5);
+            doc.setTextColor(85, 80, 75);
+            doc.text(g('payMethod') || '—', W / 2 + 4, detailY + 17);
+
+            y = Math.max(y, detailY + 24) + 6;
+
+            // ── Amber rule ──
+            doc.setDrawColor(245, 166, 35);
+            doc.setLineWidth(1.5);
+            doc.line(M, y, W - M, y);
+            y += 7;
+
+            // ── Items table ──
+            doc.autoTable({
+                startY: y,
+                margin: { left: M, right: M },
+                head: [['Description', 'Qty', 'Unit Price', 'Amount']],
+                body: items.map(i => [i.desc || '—', String(i.qty), s + i.price.toFixed(2), s + (i.qty * i.price).toFixed(2)]),
+                styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 4, textColor: [17, 17, 17], lineColor: [240, 240, 240], lineWidth: 0.25 },
+                headStyles: {
+                    fillColor: [15, 19, 24], textColor: [200, 195, 190],
+                    fontStyle: 'bold', fontSize: 8,
+                    lineColor: [30, 35, 45], lineWidth: 0.3
+                },
+                alternateRowStyles: { fillColor: [250, 249, 247] },
+                columnStyles: {
+                    0: { cellWidth: 'auto' },
+                    1: { halign: 'right', cellWidth: 18 },
+                    2: { halign: 'right', cellWidth: 36 },
+                    3: { halign: 'right', cellWidth: 38, fontStyle: 'bold' }
+                },
+            });
+
+            y = doc.lastAutoTable.finalY + 8;
+
+            // ── Totals ──
+            const totX = W - M - 72;
+            const totR = W - M;
+            const addTRow = (lbl, val, bold = false, color = null) => {
+                doc.setFont('helvetica', bold ? 'bold' : 'normal');
+                doc.setFontSize(bold ? 11 : 9);
+                doc.setTextColor(bold ? 17 : 120, bold ? 17 : 115, bold ? 17 : 110);
+                doc.text(lbl, totX, y);
+                if (color) doc.setTextColor(color[0], color[1], color[2]);
+                else doc.setTextColor(17, 17, 17);
+                doc.text(val, totR, y, { align: 'right' });
+                y += 5.5;
+            };
+
+            addTRow('Subtotal', s + sub.toFixed(2));
+            if (taxRate > 0) addTRow('Tax (' + taxRate + '%)', s + tax.toFixed(2));
+            if (discRate > 0) addTRow('Discount (' + discRate + '%)', '-' + s + disc.toFixed(2), false, [204, 34, 0]);
+
+            y += 1;
+            doc.setDrawColor(17, 17, 17);
+            doc.setLineWidth(0.8);
+            doc.line(totX - 4, y, totR, y);
+            y += 4;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(17, 17, 17);
+            doc.text('Total Due', totX, y);
+            doc.setTextColor(196, 125, 14);
+            doc.text(s + total.toFixed(2), totR, y, { align: 'right' });
+            y += 10;
+
+            // ── Notes / Payment Info ──
+            if (g('notes') || g('payInfo')) {
+                doc.setDrawColor(235, 232, 225);
+                doc.setLineWidth(0.3);
+                doc.line(M, y, W - M, y);
+                y += 7;
+                if (g('notes')) {
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 160);
+                    doc.text('NOTES', M, y); y += 5;
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(85, 80, 75);
+                    const nl = doc.splitTextToSize(g('notes'), W / 2 - M - 5);
+                    doc.text(nl, M, y); y += nl.length * 4.5 + 5;
+                }
+                if (g('payInfo')) {
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(170, 165, 160);
+                    doc.text('PAYMENT INFO', M, y); y += 5;
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(85, 80, 75);
+                    const pl = doc.splitTextToSize(g('payInfo'), W / 2 - M - 5);
+                    doc.text(pl, M, y);
+                }
+            }
+
+            // ── Signature ──
+            if (g('prepBy')) {
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(17, 17, 17);
+                doc.text(g('prepBy'), W - M, H - 44, { align: 'right' });
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(120, 115, 110);
+                if (g('prepTitle')) doc.text(g('prepTitle'), W - M, H - 39, { align: 'right' });
+                doc.setDrawColor(200, 195, 190); doc.setLineWidth(0.3);
+                doc.line(W - M - 80, H - 47, W - M, H - 47);
+            }
+
+            // ── Dark footer ──
+            doc.setFillColor(15, 19, 24);
+            doc.rect(0, H - 18, W, 18, 'F');
+            doc.setFillColor(245, 166, 35);
+            doc.rect(0, H - 18, W, 3, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(255, 255, 255);
+            doc.text(g('fromName') || 'Goodman Computer', M, H - 8);
+            const footRight = [g('fromWeb'), g('fromEmail'), g('fromPhone')].filter(Boolean).join('  ·  ');
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 95, 90);
+            if (footRight) doc.text(footRight, W - M, H - 8, { align: 'right' });
+
+            const fname = `GC_Invoice_${g('invNum') || 'INV'}_${(g('toName') || 'Client').replace(/\s+/g, '_')}.pdf`;
+            doc.save(fname);
+            toast('✓ PDF saved: ' + fname);
+        }
+
+        // ════════════════════════════════════
+        // CLEAR
+        // ════════════════════════════════════
+        function clearForm() {
+            if (!confirm('Start a new invoice? All data will be cleared.')) return;
+            items = [{ desc: '', qty: 1, price: 0 }];
+            ['toName', 'toAddr', 'toEmail', 'toPhone', 'notes', 'payInfo', 'prepBy', 'prepTitle', 'fromAddr', 'fromPhone', 'fromEmail', 'fromWeb', 'fromTax'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            document.getElementById('taxRate').value = '0';
+            document.getElementById('discRate').value = '0';
+            document.getElementById('invNum').value = 'GC-' + String(Math.floor(1000 + Math.random() * 9000));
+            const today = new Date(); const due = new Date(); due.setDate(due.getDate() + 30);
+            document.getElementById('issueDate').value = today.toISOString().split('T')[0];
+            document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+            buildItems(); render();
+            toast('✓ New invoice ready');
+        }
+
+        // ════════════════════════════════════
+        // COPY
+        // ════════════════════════════════════
+        function copyText() {
+            const s = sym();
+            const sub = subtotal();
+            const taxRate = parseFloat(g('taxRate')) || 0;
+            const discRate = parseFloat(g('discRate')) || 0;
+            const tax = sub * taxRate / 100;
+            const disc = sub * discRate / 100;
+            const total = sub + tax - disc;
+            const lines = items.map(i => `  • ${i.desc} × ${i.qty} @ ${s}${i.price.toFixed(2)} = ${s}${(i.qty * i.price).toFixed(2)}`).join('\n');
+            const txt = `INVOICE ${g('invNum') || ''}\nFrom: ${g('fromName') || 'Goodman Computer'}\nTo: ${g('toName') || '—'}\nDate: ${g('issueDate')} | Due: ${g('dueDate')}\n\n${lines}\n\nTotal: ${s}${total.toFixed(2)}\nStatus: ${g('status')}`;
+            navigator.clipboard.writeText(txt).then(() => toast('✓ Copied to clipboard')).catch(() => toast('⚠ Copy failed'));
+        }
+
+        // ════════════════════════════════════
+        // TOAST
+        // ════════════════════════════════════
+        let toastT;
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastT);
+            toastT = setTimeout(() => el.classList.remove('show'), 3200);
+        }
+    </script>
+</body>
+
+</html>
